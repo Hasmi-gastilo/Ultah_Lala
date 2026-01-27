@@ -1,0 +1,1199 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Particle Gesture Interaction</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Space Grotesk', 'Helvetica Neue', sans-serif;
+      background: #0a0a0f;
+      color: #ffffff;
+    }
+
+    html, body, #app-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    #app-container {
+      position: relative;
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #video {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 160px;
+      height: 120px;
+      border-radius: 12px;
+      border: 2px solid rgba(99, 102, 241, 0.5);
+      transform: scaleX(-1);
+      z-index: 10;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    #controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(15, 15, 25, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      min-width: 280px;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      font-weight: 700;
+      color: #a5b4fc;
+      letter-spacing: -0.5px;
+    }
+
+    .instruction {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .control-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    select, input[type="color"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(30, 30, 45, 0.8);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    select:hover, input[type="color"]:hover {
+      border-color: rgba(99, 102, 241, 0.7);
+      background: rgba(40, 40, 60, 0.9);
+    }
+
+    select:focus, input[type="color"]:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    input[type="color"] {
+      height: 44px;
+      padding: 4px;
+    }
+
+    .color-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .color-swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 2px solid rgba(99, 102, 241, 0.4);
+    }
+
+    #fullscreen-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border: none;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #fullscreen-btn:hover {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    #fullscreen-btn:active {
+      transform: translateY(0);
+    }
+
+    #status {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 15, 25, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      border-radius: 24px;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      font-size: 13px;
+      color: #94a3b8;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    #drop-zone {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(99, 102, 241, 0.1);
+      border: 3px dashed rgba(99, 102, 241, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      pointer-events: none;
+    }
+    
+    #drop-zone.active {
+      display: flex;
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.8);
+    }
+    
+    #drop-zone-text {
+      font-size: 32px;
+      font-weight: bold;
+      color: #a5b4fc;
+      text-align: center;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .hand-open .status-dot {
+      background: #f59e0b;
+    }
+
+    @media (max-width: 768px) {
+      #controls {
+        left: 10px;
+        right: 10px;
+        top: 10px;
+        min-width: 0;
+        padding: 16px;
+      }
+
+      #video {
+        width: 120px;
+        height: 90px;
+        top: 10px;
+        right: 10px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div id="app-container">
+   <div id="canvas-container"></div>
+   <video id="video" autoplay playsinline></video>
+   <div id="drop-zone">
+    <div id="drop-zone-text">
+     📷 Lepas Foto Di Sini! 🎉
+    </div>
+   </div>
+   <div id="controls">
+    <h1 id="main-title">Happy Birthday! 🎂💖</h1>
+    <p class="instruction" id="instruction-text">Buka tangan lebar ����� Geser kanan untuk ganti bentuk</p>
+    <div class="control-group"><label>Particle Shape</label> <select id="shape-select"> <option value="cake">🎂 Kue Ulang Tahun</option> <option value="heart">💝 Hati Cinta</option> <option value="gift">🎁 Kado Spesial</option> <option value="star">⭐ Bintang Berkilau</option> <option value="balloon">🎈 Balon Pesta</option> <option value="flower">�� Bunga Cantik</option> <option value="birthday">Selamat Ulang Tahun Sayangku</option> <option value="iloveyou">I Love You Lala</option> <option value="photo">📷 Foto Spesial</option> </select>
+    </div>
+    <div class="control-group"><label>Particle Color</label>
+     <div class="color-preview"><input type="color" id="color-picker" value="#ff69b4">
+      <div class="color-swatch" id="color-swatch"></div>
+     </div>
+    </div><button id="fullscreen-btn">Fullscreen</button>
+   </div>
+   <div id="status">
+    <div class="status-dot"></div><span id="status-text">Initializing camera...</span>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      main_title: "Happy Birthday! 🎂💖",
+      instruction_text: "Geser kanan/kiri untuk ganti bentuk",
+      primary_color: "#ff69b4",
+      background_start: "#1a1a2e",
+      background_end: "#0a0a0f",
+      accent_color: "#a5b4fc",
+      font_family: "Space Grotesk",
+      font_size: 14
+    };
+
+    let scene, camera, renderer, particles, particleSystem;
+    let handOpen = false;
+    let targetScale = 1;
+    let currentScale = 1;
+    let particleColor = new THREE.Color(defaultConfig.primary_color);
+    let currentShape = 'cake';
+    const particleCount = 5000;
+    let previousHandX = null;
+    let gestureTimeout = null;
+    const shapes = ['cake', 'heart', 'gift', 'star', 'balloon', 'flower', 'birthday', 'iloveyou', 'photo'];
+    
+    let photoElement = null;
+    // ⭐ GANTI NAMA FILE FOTO KAMU DI BAWAH INI! ⭐
+    // Contoh: 'foto-lala.jpg' atau 'my-photo.png'
+    let uploadedPhotoURL = 'Lala.jpeg';
+
+    function initThreeJS() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 0, 50); // Position camera straight on
+      camera.lookAt(0, 0, 0); // Look at center
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+      createParticles(currentShape);
+      animate();
+    }
+
+    let isTransitioning = false;
+    let transitionProgress = 0;
+    let oldPositions = null;
+    let newPositions = null;
+    let targetShape = null;
+
+    function createParticles(shape, animate = false) {
+      // Show/hide photo based on shape
+      if (shape === 'photo') {
+        showPhoto();
+      } else {
+        hidePhoto();
+      }
+      
+      if (animate && particleSystem) {
+        // Store old positions for smooth transition
+        oldPositions = particleSystem.geometry.attributes.position.array.slice();
+        targetShape = shape;
+        
+        // Calculate new positions
+        newPositions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+          const pos = getShapePosition(shape, i);
+          newPositions[i * 3] = pos.x;
+          newPositions[i * 3 + 1] = pos.y;
+          newPositions[i * 3 + 2] = pos.z;
+        }
+        
+        isTransitioning = true;
+        transitionProgress = 0;
+        return;
+      }
+
+      if (particleSystem) {
+        scene.remove(particleSystem);
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      const colors = new Float32Array(particleCount * 3);
+
+      for (let i = 0; i < particleCount; i++) {
+        const pos = getShapePosition(shape, i);
+        positions[i * 3] = pos.x;
+        positions[i * 3 + 1] = pos.y;
+        positions[i * 3 + 2] = pos.z;
+
+        colors[i * 3] = particleColor.r;
+        colors[i * 3 + 1] = particleColor.g;
+        colors[i * 3 + 2] = particleColor.b;
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.8,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending
+      });
+
+      particleSystem = new THREE.Points(geometry, material);
+      scene.add(particleSystem);
+    }
+
+    function getShapePosition(shape, index) {
+      const t = index / particleCount;
+      
+      switch(shape) {
+        case 'cake':
+          return getCakePosition(t);
+        case 'heart':
+          return getHeartPosition(t);
+        case 'gift':
+          return getGiftPosition(t);
+        case 'star':
+          return getStarPosition(t);
+        case 'balloon':
+          return getBalloonPosition(t);
+        case 'flower':
+          return getFlowerPosition(t);
+        case 'birthday':
+          return getTextPosition(t, 'SELAMAT\nULANG TAHUN\nSAYANGKU');
+        case 'iloveyou':
+          return getTextPosition(t, 'I LOVE YOU\nLALA');
+        case 'photo':
+          return getPhotoFramePosition(t);
+        default:
+          return getCakePosition(t);
+      }
+    }
+    
+    function getPhotoFramePosition(t) {
+      // Bingkai foto portrait 9:16 TEBAL dan CANTIK!
+      const frameWidth = 11.25;
+      const frameHeight = 20;
+      const borderThickness = 2.5; // Tebal biar keliatan!
+      
+      // Create thick border by filling the border area with particles
+      const totalParticles = particleCount;
+      const index = Math.floor(t * totalParticles);
+      
+      // Distribute particles to fill the border thickness
+      const side = Math.floor(index / (totalParticles / 4)); // Which side (0=top, 1=right, 2=bottom, 3=left)
+      const sideProgress = (index % (totalParticles / 4)) / (totalParticles / 4);
+      
+      // Random offset within border thickness for filled look
+      const thicknessOffset = (Math.random() - 0.5) * borderThickness;
+      const depthVariation = (Math.random() - 0.5) * 0.3; // Tiny depth for texture
+      
+      if (side === 0) {
+        // Top edge - filled thick border
+        return {
+          x: (sideProgress - 0.5) * frameWidth * 2,
+          y: frameHeight + thicknessOffset,
+          z: depthVariation
+        };
+      } else if (side === 1) {
+        // Right edge - filled thick border
+        return {
+          x: frameWidth + thicknessOffset,
+          y: frameHeight - sideProgress * frameHeight * 2,
+          z: depthVariation
+        };
+      } else if (side === 2) {
+        // Bottom edge - filled thick border
+        return {
+          x: frameWidth - sideProgress * frameWidth * 2,
+          y: -frameHeight + thicknessOffset,
+          z: depthVariation
+        };
+      } else {
+        // Left edge - filled thick border
+        return {
+          x: -frameWidth + thicknessOffset,
+          y: -frameHeight + sideProgress * frameHeight * 2,
+          z: depthVariation
+        };
+      }
+    }
+    
+    function showPhoto() {
+      if (!photoElement) {
+        photoElement = document.createElement('img');
+        photoElement.id = 'special-photo';
+        photoElement.style.position = 'absolute';
+        photoElement.style.top = '50%';
+        photoElement.style.left = '50%';
+        photoElement.style.transform = 'translate(-50%, -50%)';
+        photoElement.style.maxWidth = '400px';
+        photoElement.style.maxHeight = '400px';
+        photoElement.style.borderRadius = '16px';
+        photoElement.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.6)';
+        photoElement.style.border = '4px solid rgba(255, 255, 255, 0.3)';
+        photoElement.style.zIndex = '5';
+        photoElement.style.opacity = '0';
+        photoElement.style.transition = 'opacity 1s ease-in-out';
+        photoElement.loading = 'lazy';
+        
+        photoElement.onerror = function() {
+          console.error('Image failed to load:', this.src);
+          this.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+          this.style.width = '400px';
+          this.style.height = '400px';
+          this.style.display = 'flex';
+          this.style.alignItems = 'center';
+          this.style.justifyContent = 'center';
+          this.alt = '📷 Drag & drop foto ke layar!';
+          
+          const placeholder = document.createElement('div');
+          placeholder.style.color = 'white';
+          placeholder.style.fontSize = '18px';
+          placeholder.style.textAlign = 'center';
+          placeholder.style.padding = '20px';
+          placeholder.style.fontWeight = 'bold';
+          placeholder.innerHTML = '📷<br><br>DRAG & DROP<br>FOTO KAMU<br>KE LAYAR!<br><br>✨';
+          this.appendChild(placeholder);
+        };
+        
+        if (uploadedPhotoURL) {
+          photoElement.src = uploadedPhotoURL;
+        } else {
+          photoElement.src = '';
+          photoElement.onerror();
+        }
+        
+        photoElement.alt = 'Foto Spesial';
+        document.getElementById('canvas-container').appendChild(photoElement);
+        
+        setTimeout(() => {
+          photoElement.style.opacity = '1';
+        }, 100);
+      }
+    }
+    
+    function hidePhoto() {
+      if (photoElement) {
+        photoElement.style.opacity = '0';
+        setTimeout(() => {
+          if (photoElement && photoElement.parentNode) {
+            photoElement.parentNode.removeChild(photoElement);
+            photoElement = null;
+          }
+        }, 1000);
+      }
+    }
+
+    function getCakePosition(t) {
+      // Kue 3 tingkat dengan lilin di atas
+      if (t < 0.5) {
+        // Base cake (tingkat bawah - paling besar)
+        const angle = (t / 0.5) * Math.PI * 2;
+        const radius = 15 + Math.random() * 3;
+        const height = -10 + Math.random() * 8;
+        return {
+          x: Math.cos(angle) * radius,
+          y: height,
+          z: Math.sin(angle) * radius
+        };
+      } else if (t < 0.75) {
+        // Middle cake (tingkat tengah)
+        const angle = ((t - 0.5) / 0.25) * Math.PI * 2;
+        const radius = 10 + Math.random() * 2;
+        const height = -2 + Math.random() * 6;
+        return {
+          x: Math.cos(angle) * radius,
+          y: height,
+          z: Math.sin(angle) * radius
+        };
+      } else if (t < 0.9) {
+        // Top cake (tingkat atas - paling kecil)
+        const angle = ((t - 0.75) / 0.15) * Math.PI * 2;
+        const radius = 6 + Math.random() * 1.5;
+        const height = 4 + Math.random() * 4;
+        return {
+          x: Math.cos(angle) * radius,
+          y: height,
+          z: Math.sin(angle) * radius
+        };
+      } else {
+        // Candles (lilin-lilin di atas)
+        const candleIndex = Math.floor((t - 0.9) / 0.1 * 5);
+        const candleAngle = (candleIndex / 5) * Math.PI * 2;
+        const candleRadius = 4;
+        return {
+          x: Math.cos(candleAngle) * candleRadius,
+          y: 8 + Math.random() * 5,
+          z: Math.sin(candleAngle) * candleRadius
+        };
+      }
+    }
+
+    function getHeartPosition(t) {
+      // Hati 3D yang lebih romantis
+      const angle = t * Math.PI * 2;
+      const x = 16 * Math.pow(Math.sin(angle), 3);
+      const y = 13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle);
+      const z = Math.sin(angle) * 8 * Math.sin(t * Math.PI * 4);
+      
+      return { x, y, z };
+    }
+
+    function getGiftPosition(t) {
+      // Kotak kado dengan pita
+      if (t < 0.8) {
+        // Box
+        const size = 15;
+        const face = Math.floor((t / 0.8) * 6);
+        const u = Math.random();
+        const v = Math.random();
+        
+        switch(face) {
+          case 0: return { x: size, y: (u - 0.5) * size * 2, z: (v - 0.5) * size * 2 };
+          case 1: return { x: -size, y: (u - 0.5) * size * 2, z: (v - 0.5) * size * 2 };
+          case 2: return { x: (u - 0.5) * size * 2, y: size, z: (v - 0.5) * size * 2 };
+          case 3: return { x: (u - 0.5) * size * 2, y: -size, z: (v - 0.5) * size * 2 };
+          case 4: return { x: (u - 0.5) * size * 2, y: (v - 0.5) * size * 2, z: size };
+          default: return { x: (u - 0.5) * size * 2, y: (v - 0.5) * size * 2, z: -size };
+        }
+      } else {
+        // Ribbon (pita)
+        const ribbonT = (t - 0.8) / 0.2;
+        const angle = ribbonT * Math.PI * 4;
+        return {
+          x: Math.cos(angle) * 3,
+          y: -15 + ribbonT * 30,
+          z: Math.sin(angle) * 3
+        };
+      }
+    }
+
+    function getStarPosition(t) {
+      // Bintang 5 sudut berkilau
+      const points = 5;
+      const outerRadius = 20;
+      const innerRadius = 8;
+      const layer = Math.floor(t * 10);
+      const layerT = (t * 10) % 1;
+      const angle = layerT * Math.PI * 2;
+      const pointIndex = Math.floor(layerT * points * 2);
+      const isOuter = pointIndex % 2 === 0;
+      const radius = isOuter ? outerRadius : innerRadius;
+      
+      return {
+        x: Math.cos(angle * points) * radius,
+        y: Math.sin(angle * points) * radius,
+        z: (layer - 5) * 2 + (Math.random() - 0.5) * 3
+      };
+    }
+
+    function getBalloonPosition(t) {
+      // Balon-balon terbang dengan tali
+      const balloonCount = 8;
+      const balloonIndex = Math.floor(t * balloonCount);
+      const balloonT = (t * balloonCount) % 1;
+      const angle = (balloonIndex / balloonCount) * Math.PI * 2;
+      const radius = 12;
+      
+      if (balloonT < 0.8) {
+        // Balloon body (oval)
+        const phi = balloonT / 0.8 * Math.PI;
+        const balloonRadius = 5;
+        return {
+          x: Math.cos(angle) * radius + Math.cos(phi * 4) * balloonRadius,
+          y: 5 + Math.sin(phi) * balloonRadius * 1.3,
+          z: Math.sin(angle) * radius + Math.sin(phi * 4) * balloonRadius
+        };
+      } else {
+        // String (tali balon)
+        const stringT = (balloonT - 0.8) / 0.2;
+        return {
+          x: Math.cos(angle) * radius,
+          y: 5 - stringT * 15 + Math.sin(stringT * Math.PI * 3) * 2,
+          z: Math.sin(angle) * radius
+        };
+      }
+    }
+
+    function getFlowerPosition(t) {
+      // Bunga dengan kelopak romantis
+      const angle = t * Math.PI * 2;
+      const petals = 8;
+      const petalAngle = Math.sin(petals * angle) * 12;
+      const radius = 8 + petalAngle;
+      const height = Math.cos(angle * petals) * 4 + Math.sin(t * Math.PI * 4) * 3;
+      
+      return {
+        x: Math.cos(angle) * radius,
+        y: height,
+        z: Math.sin(angle) * radius
+      };
+    }
+
+    function getTextPosition(t, text) {
+      const lines = text.split('\n');
+      const fontSize = 8;
+      const letterSpacing = 6;
+      const lineHeight = 12;
+      
+      const totalHeight = lines.length * lineHeight;
+      const startY = totalHeight / 2;
+      
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ';
+      const letterPatterns = {
+        'A': [[0,1,1,1,0],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]],
+        'B': [[1,1,1,1,0],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,1],[1,1,1,1,0]],
+        'C': [[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,1]],
+        'D': [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0]],
+        'E': [[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,1,1,1,1]],
+        'G': [[0,1,1,1,1],[1,0,0,0,0],[1,0,1,1,1],[1,0,0,0,1],[0,1,1,1,0]],
+        'H': [[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]],
+        'I': [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1]],
+        'K': [[1,0,0,1,0],[1,0,1,0,0],[1,1,0,0,0],[1,0,1,0,0],[1,0,0,1,0]],
+        'L': [[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
+        'M': [[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+        'N': [[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,0,1,1],[1,0,0,0,1]],
+        'O': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+        'R': [[1,1,1,1,0],[1,0,0,0,1],[1,1,1,1,0],[1,0,1,0,0],[1,0,0,1,0]],
+        'S': [[0,1,1,1,1],[1,0,0,0,0],[0,1,1,1,0],[0,0,0,0,1],[1,1,1,1,0]],
+        'T': [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+        'U': [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+        'V': [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0]],
+        'Y': [[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+        ' ': [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]
+      };
+      
+      let allPoints = [];
+      let currentY = startY; // Start from top
+      
+      lines.forEach((line, lineIndex) => {
+        const lineWidth = line.length * letterSpacing;
+        let currentX = -lineWidth / 2;
+        
+        for (let charIndex = 0; charIndex < line.length; charIndex++) {
+          const char = line[charIndex];
+          const pattern = letterPatterns[char.toUpperCase()];
+          if (pattern) {
+            for (let row = 0; row < 5; row++) {
+              for (let col = 0; col < 5; col++) {
+                if (pattern[row][col] === 1) {
+                  // Store with ordering information to maintain sequence
+                  allPoints.push({
+                    x: currentX + col * 1.2,
+                    y: currentY - row * 1.2,
+                    z: (Math.random() - 0.5) * 2,
+                    order: lineIndex * 1000 + charIndex * 100 + row * 10 + col
+                  });
+                }
+              }
+            }
+          }
+          currentX += letterSpacing;
+        }
+        currentY -= lineHeight; // Move down for next line
+      });
+      
+      // Sort by order to ensure sequential rendering
+      allPoints.sort((a, b) => a.order - b.order);
+      
+      if (allPoints.length === 0) {
+        return { x: 0, y: 0, z: 0 };
+      }
+      
+      const index = Math.floor(t * allPoints.length) % allPoints.length;
+      return allPoints[index];
+    }
+
+    let animationTime = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      animationTime += 0.01;
+      currentScale += (targetScale - currentScale) * 0.1;
+      
+      // Handle smooth transition animation
+      if (isTransitioning && particleSystem && oldPositions && newPositions) {
+        transitionProgress += 0.02; // Speed of transition
+        
+        // Easing function for smooth animation (ease-in-out)
+        const easeProgress = transitionProgress < 0.5
+          ? 4 * transitionProgress * transitionProgress * transitionProgress
+          : 1 - Math.pow(-2 * transitionProgress + 2, 3) / 2;
+        
+        const positions = particleSystem.geometry.attributes.position.array;
+        
+        // Interpolate between old and new positions
+        for (let i = 0; i < particleCount * 3; i++) {
+          positions[i] = oldPositions[i] + (newPositions[i] - oldPositions[i]) * easeProgress;
+        }
+        
+        particleSystem.geometry.attributes.position.needsUpdate = true;
+        
+        // Add extra rotation during transition for dramatic effect (except for photo)
+        if (targetShape !== 'photo') {
+          particleSystem.rotation.y += 0.008;
+        }
+        
+        // Finish transition
+        if (transitionProgress >= 1) {
+          isTransitioning = false;
+          transitionProgress = 0;
+          oldPositions = null;
+          newPositions = null;
+          currentShape = targetShape;
+        }
+      } else if (particleSystem) {
+        // Only rotate if not photo shape
+        if (currentShape !== 'photo') {
+          particleSystem.rotation.y += 0.003;
+        } else {
+          // LOCK rotation at 0 degrees for photo frame
+          particleSystem.rotation.x = 0;
+          particleSystem.rotation.y = 0;
+          particleSystem.rotation.z = 0;
+          // Gentle floating up and down for photo
+          const floatOffset = Math.sin(animationTime * 0.5) * 2;
+          particleSystem.position.y = floatOffset;
+        }
+      }
+      
+      if (particleSystem) {
+        particleSystem.scale.set(currentScale, currentScale, currentScale);
+      }
+      
+      // Apply gentle floating AND scaling to photo element (no rotation)
+      if (photoElement && currentShape === 'photo') {
+        // Use NEGATIVE floatOffset so photo moves in SAME direction as particles!
+        const floatOffset = -particleSystem.position.y * 10; // NEGATIVE to sync direction!
+        // Use currentScale so photo follows hand gestures!
+        photoElement.style.transform = `translate(-50%, calc(-50% + ${floatOffset}px)) scale(${currentScale})`;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function updateParticleColor(color) {
+      particleColor = new THREE.Color(color);
+      if (particleSystem) {
+        const colors = particleSystem.geometry.attributes.color.array;
+        for (let i = 0; i < particleCount; i++) {
+          colors[i * 3] = particleColor.r;
+          colors[i * 3 + 1] = particleColor.g;
+          colors[i * 3 + 2] = particleColor.b;
+        }
+        particleSystem.geometry.attributes.color.needsUpdate = true;
+      }
+    }
+
+    async function initCamera() {
+      document.getElementById('status-text').textContent = 'Requesting camera access...';
+      
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        document.getElementById('status-text').textContent = 'Camera not supported - Using mouse';
+        initMouseFallback();
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'user', 
+            width: { ideal: 640 }, 
+            height: { ideal: 480 } 
+          } 
+        });
+        
+        const videoElement = document.getElementById('video');
+        videoElement.srcObject = stream;
+        
+        videoElement.onloadedmetadata = () => {
+          videoElement.play();
+          initHandTracking();
+          document.getElementById('status-text').textContent = 'Camera active - Show your hand';
+        };
+      } catch (error) {
+        console.error('Camera access error:', error);
+        
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          document.getElementById('status-text').textContent = 'Camera blocked - Check permissions';
+        } else if (error.name === 'NotFoundError') {
+          document.getElementById('status-text').textContent = 'No camera found - Using mouse';
+        } else {
+          document.getElementById('status-text').textContent = 'Camera error - Using mouse';
+        }
+        
+        initMouseFallback();
+      }
+    }
+
+    function initHandTracking() {
+      const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
+      hands.onResults(onHandResults);
+
+      const camera = new Camera(document.getElementById('video'), {
+        onFrame: async () => {
+          await hands.send({ image: document.getElementById('video') });
+        },
+        width: 640,
+        height: 480
+      });
+      camera.start();
+    }
+
+    function onHandResults(results) {
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        const isOpen = calculateHandOpenness(landmarks);
+        
+        handOpen = isOpen;
+        targetScale = isOpen ? 1.5 : 0.7;
+        
+        const statusElement = document.getElementById('status');
+        const statusText = document.getElementById('status-text');
+        
+        // Detect hand swipe gesture - works anytime!
+        const wrist = landmarks[0];
+        const currentHandX = wrist.x;
+        
+        if (previousHandX !== null) {
+          const deltaX = currentHandX - previousHandX;
+          const threshold = 0.08;
+          
+          if (!gestureTimeout) {
+            if (deltaX > threshold) {
+              // Swipe right - next shape
+              changeShape(1);
+              statusText.textContent = '➡️ Geser kanan - Bentuk berikutnya!';
+              statusElement.classList.add('hand-open');
+              
+              gestureTimeout = setTimeout(() => {
+                gestureTimeout = null;
+                statusText.textContent = 'Geser kanan/kiri untuk ganti bentuk';
+                statusElement.classList.remove('hand-open');
+              }, 800);
+            } else if (deltaX < -threshold) {
+              // Swipe left - previous shape
+              changeShape(-1);
+              statusText.textContent = '⬅️ Geser kiri - Bentuk sebelumnya!';
+              statusElement.classList.add('hand-open');
+              
+              gestureTimeout = setTimeout(() => {
+                gestureTimeout = null;
+                statusText.textContent = 'Geser kanan/kiri untuk ganti bentuk';
+                statusElement.classList.remove('hand-open');
+              }, 800);
+            }
+          }
+        }
+        
+        previousHandX = currentHandX;
+      }
+    }
+    
+    function changeShape(direction) {
+      if (isTransitioning) return; // Don't change during transition
+      
+      const currentIndex = shapes.indexOf(currentShape);
+      let newIndex = currentIndex + direction;
+      
+      if (newIndex >= shapes.length) {
+        newIndex = 0;
+      } else if (newIndex < 0) {
+        newIndex = shapes.length - 1;
+      }
+      
+      const newShape = shapes[newIndex];
+      createParticles(newShape, true); // Enable animation
+      document.getElementById('shape-select').value = newShape;
+    }
+
+    function calculateHandOpenness(landmarks) {
+      const fingerTips = [8, 12, 16, 20];
+      const fingerBases = [5, 9, 13, 17];
+      
+      let openFingers = 0;
+      
+      for (let i = 0; i < fingerTips.length; i++) {
+        const tip = landmarks[fingerTips[i]];
+        const base = landmarks[fingerBases[i]];
+        const distance = Math.sqrt(
+          Math.pow(tip.x - base.x, 2) + 
+          Math.pow(tip.y - base.y, 2)
+        );
+        
+        if (distance > 0.1) openFingers++;
+      }
+      
+      return openFingers >= 3;
+    }
+
+    function initMouseFallback() {
+      let isMouseDown = false;
+      
+      document.addEventListener('mousedown', () => {
+        isMouseDown = true;
+        targetScale = 1.5;
+        document.getElementById('status-text').textContent = 'Mouse Down - Particles expanding';
+      });
+      
+      document.addEventListener('mouseup', () => {
+        isMouseDown = false;
+        targetScale = 0.7;
+        document.getElementById('status-text').textContent = 'Mouse Up - Particles contracting';
+      });
+    }
+
+    document.getElementById('shape-select').addEventListener('change', (e) => {
+      if (isTransitioning) return;
+      const newShape = e.target.value;
+      createParticles(newShape, true);
+    });
+
+    document.getElementById('color-picker').addEventListener('input', (e) => {
+      const color = e.target.value;
+      updateParticleColor(color);
+      document.getElementById('color-swatch').style.background = color;
+      if (window.elementSdk) {
+        window.elementSdk.setConfig({ primary_color: color });
+      }
+    });
+
+    document.getElementById('fullscreen-btn').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    async function onConfigChange(config) {
+      document.getElementById('main-title').textContent = config.main_title || defaultConfig.main_title;
+      document.getElementById('instruction-text').textContent = config.instruction_text || defaultConfig.instruction_text;
+      
+      const fontFamily = config.font_family || defaultConfig.font_family;
+      const fontSize = config.font_size || defaultConfig.font_size;
+      const baseFontStack = 'Helvetica Neue, sans-serif';
+      
+      document.body.style.fontFamily = `${fontFamily}, ${baseFontStack}`;
+      document.getElementById('main-title').style.fontSize = `${fontSize * 1.71}px`;
+      document.querySelector('.instruction').style.fontSize = `${fontSize * 0.93}px`;
+      document.querySelectorAll('label').forEach(label => {
+        label.style.fontSize = `${fontSize * 0.86}px`;
+      });
+      document.querySelectorAll('select, input').forEach(input => {
+        input.style.fontSize = `${fontSize}px`;
+      });
+      document.getElementById('fullscreen-btn').style.fontSize = `${fontSize}px`;
+      document.getElementById('status').style.fontSize = `${fontSize * 0.93}px`;
+      
+      if (config.primary_color) {
+        updateParticleColor(config.primary_color);
+        document.getElementById('color-picker').value = config.primary_color;
+        document.getElementById('color-swatch').style.background = config.primary_color;
+      }
+      
+      if (config.background_start && config.background_end) {
+        document.getElementById('app-container').style.background = 
+          `radial-gradient(ellipse at center, ${config.background_start} 0%, ${config.background_end} 100%)`;
+      }
+      
+      if (config.accent_color) {
+        document.getElementById('main-title').style.color = config.accent_color;
+      }
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            },
+            {
+              get: () => config.background_start || defaultConfig.background_start,
+              set: (value) => {
+                config.background_start = value;
+                window.elementSdk.setConfig({ background_start: value });
+              }
+            },
+            {
+              get: () => config.background_end || defaultConfig.background_end,
+              set: (value) => {
+                config.background_end = value;
+                window.elementSdk.setConfig({ background_end: value });
+              }
+            },
+            {
+              get: () => config.accent_color || defaultConfig.accent_color,
+              set: (value) => {
+                config.accent_color = value;
+                window.elementSdk.setConfig({ accent_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["main_title", config.main_title || defaultConfig.main_title],
+          ["instruction_text", config.instruction_text || defaultConfig.instruction_text]
+        ])
+      });
+    }
+
+    // Drag and Drop functionality
+    const appContainer = document.getElementById('app-container');
+    const dropZone = document.getElementById('drop-zone');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      appContainer.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+      appContainer.addEventListener(eventName, () => {
+        dropZone.classList.add('active');
+      }, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+      appContainer.addEventListener(eventName, () => {
+        dropZone.classList.remove('active');
+      }, false);
+    });
+    
+    appContainer.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+    }
+    
+    function handleFiles(files) {
+      const file = files[0];
+      
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+          uploadedPhotoURL = e.target.result;
+          
+          // If we're on photo shape, refresh the photo
+          if (currentShape === 'photo' && photoElement) {
+            hidePhoto();
+            setTimeout(() => {
+              showPhoto();
+            }, 100);
+          }
+          
+          // Auto switch to photo shape
+          if (currentShape !== 'photo') {
+            createParticles('photo', true);
+            document.getElementById('shape-select').value = 'photo';
+          }
+          
+          document.getElementById('status-text').textContent = '��� Foto berhasil di-upload!';
+          setTimeout(() => {
+            document.getElementById('status-text').textContent = 'Geser kanan/kiri untuk ganti bentuk';
+          }, 2000);
+        };
+        
+        reader.readAsDataURL(file);
+      } else {
+        document.getElementById('status-text').textContent = '❌ File harus gambar (JPG/PNG/GIF)';
+        setTimeout(() => {
+          document.getElementById('status-text').textContent = 'Geser kanan/kiri untuk ganti bentuk';
+        }, 2000);
+      }
+    }
+
+    initThreeJS();
+    initCamera();
+    document.getElementById('color-swatch').style.background = defaultConfig.primary_color;
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c465fc244ddec19',t:'MTc2OTQ5NzIzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
