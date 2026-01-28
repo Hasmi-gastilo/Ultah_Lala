@@ -1,1200 +1,639 @@
-<!doctype html>
-<html lang="en">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Happy Brithday Lala</title>
-  <script src="/_sdk/element_sdk.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-  <style>
-    body {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: 'Space Grotesk', 'Helvetica Neue', sans-serif;
-      background: #0a0a0f;
-      color: #ffffff;
-    }
-
-    html, body, #app-container {
-      width: 100%;
-      height: 100%;
-    }
-
-    #app-container {
-      position: relative;
-      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
-    }
-
-    #canvas-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    #video {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 160px;
-      height: 120px;
-      border-radius: 12px;
-      border: 2px solid rgba(99, 102, 241, 0.5);
-      transform: scaleX(-1);
-      z-index: 10;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    }
-
-    #controls {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: rgba(15, 15, 25, 0.85);
-      backdrop-filter: blur(10px);
-      padding: 24px;
-      border-radius: 16px;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      z-index: 10;
-      min-width: 280px;
-    }
-
-    h1 {
-      margin: 0 0 8px 0;
-      font-size: 24px;
-      font-weight: 700;
-      color: #a5b4fc;
-      letter-spacing: -0.5px;
-    }
-
-    .instruction {
-      font-size: 13px;
-      color: #94a3b8;
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-
-    .control-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: #cbd5e1;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    select, input[type="color"] {
-      width: 100%;
-      padding: 10px 12px;
-      background: rgba(30, 30, 45, 0.8);
-      border: 1px solid rgba(99, 102, 241, 0.4);
-      border-radius: 8px;
-      color: #ffffff;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    select:hover, input[type="color"]:hover {
-      border-color: rgba(99, 102, 241, 0.7);
-      background: rgba(40, 40, 60, 0.9);
-    }
-
-    select:focus, input[type="color"]:focus {
-      outline: none;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-    }
-
-    input[type="color"] {
-      height: 44px;
-      padding: 4px;
-    }
-
-    .color-preview {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .color-swatch {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      border: 2px solid rgba(99, 102, 241, 0.4);
-    }
-
-    #fullscreen-btn {
-      width: 100%;
-      padding: 12px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      border: none;
-      border-radius: 8px;
-      color: #ffffff;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    #fullscreen-btn:hover {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
-    }
-
-    #fullscreen-btn:active {
-      transform: translateY(0);
-    }
-
-    #status {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(15, 15, 25, 0.85);
-      backdrop-filter: blur(10px);
-      padding: 12px 24px;
-      border-radius: 24px;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      font-size: 13px;
-      color: #94a3b8;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Taretan Production - Fixed Dashboard</title>
     
-    #drop-zone {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(99, 102, 241, 0.1);
-      border: 3px dashed rgba(99, 102, 241, 0.5);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      pointer-events: none;
-    }
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
-    #drop-zone.active {
-      display: flex;
-      background: rgba(99, 102, 241, 0.2);
-      border-color: rgba(99, 102, 241, 0.8);
-    }
-    
-    #drop-zone-text {
-      font-size: 32px;
-      font-weight: bold;
-      color: #a5b4fc;
-      text-align: center;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    }
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #10b981;
-      animation: pulse 2s ease-in-out infinite;
-    }
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .hand-open .status-dot {
-      background: #f59e0b;
-    }
-
-    @media (max-width: 768px) {
-      #controls {
-        left: 10px;
-        right: 10px;
-        top: 10px;
-        min-width: 0;
-        padding: 16px;
-      }
-
-      #video {
-        width: 120px;
-        height: 90px;
-        top: 10px;
-        right: 10px;
-      }
-
-      h1 {
-        font-size: 20px;
-      }
-    }
-  </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
- </head>
- <body>
-  <div id="app-container">
-   <div id="canvas-container"></div>
-   <video id="video" autoplay playsinline></video>
-   <div id="drop-zone">
-    <div id="drop-zone-text">
-     📷 Lepas Foto Di Sini! 🎉
-    </div>
-   </div>
-   <div id="controls">
-    <h1 id="main-title">Happy Birthday! 🎂💖</h1>
-    <p class="instruction" id="instruction-text">Buka tangan lebar ����� Geser kanan untuk ganti bentuk</p>
-    <div class="control-group"><label>Particle Shape</label> <select id="shape-select"> <option value="cake">🎂 Kue Ulang Tahun</option> <option value="heart">💝 Hati Cinta</option> <option value="gift">🎁 Kado Spesial</option> <option value="star">⭐ Bintang Berkilau</option> <option value="balloon">🎈 Balon Pesta</option> <option value="flower">�� Bunga Cantik</option> <option value="birthday">Selamat Ulang Tahun Sayangku</option> <option value="iloveyou">I Love You Lala</option> <option value="photo">📷 Foto Spesial</option> </select>
-    </div>
-    <div class="control-group"><label>Particle Color</label>
-     <div class="color-preview"><input type="color" id="color-picker" value="#ff69b4">
-      <div class="color-swatch" id="color-swatch"></div>
-     </div>
-    </div><button id="fullscreen-btn">Fullscreen</button>
-   </div>
-   <div id="status">
-    <div class="status-dot"></div><span id="status-text">Initializing camera...</span>
-   </div>
-  </div>
-  <script>
-    const defaultConfig = {
-      main_title: "Happy Birthday! 🎂💖",
-      instruction_text: "Geser kanan/kiri untuk ganti bentuk",
-      primary_color: "#ff69b4",
-      background_start: "#1a1a2e",
-      background_end: "#0a0a0f",
-      accent_color: "#a5b4fc",
-      font_family: "Space Grotesk",
-      font_size: 14
-    };
-
-    let scene, camera, renderer, particles, particleSystem;
-    let handOpen = false;
-    let targetScale = 1;
-    let currentScale = 1;
-    let particleColor = new THREE.Color(defaultConfig.primary_color);
-    let currentShape = 'cake';
-    const particleCount = 5000;
-    let previousHandX = null;
-    let gestureTimeout = null;
-    const shapes = ['cake', 'heart', 'gift', 'star', 'balloon', 'flower', 'birthday', 'iloveyou', 'photo'];
-    
-    let photoElement = null;
-    // ⭐ GANTI NAMA FILE FOTO KAMU DI BAWAH INI! ⭐
-    // Contoh: 'foto-lala.jpg' atau 'my-photo.png'
-    let uploadedPhotoURL = 'Lala.jpeg';
-
-    function initThreeJS() {
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 0, 50); // Position camera straight on
-      camera.lookAt(0, 0, 0); // Look at center
-
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-      createParticles(currentShape);
-      animate();
-    }
-
-    let isTransitioning = false;
-    let transitionProgress = 0;
-    let oldPositions = null;
-    let newPositions = null;
-    let targetShape = null;
-
-    function createParticles(shape, animate = false) {
-      // Show/hide photo based on shape
-      if (shape === 'photo') {
-        showPhoto();
-      } else {
-        hidePhoto();
-      }
-      
-      if (animate && particleSystem) {
-        // Store old positions for smooth transition
-        oldPositions = particleSystem.geometry.attributes.position.array.slice();
-        targetShape = shape;
-        
-        // Calculate new positions
-        newPositions = new Float32Array(particleCount * 3);
-        for (let i = 0; i < particleCount; i++) {
-          const pos = getShapePosition(shape, i);
-          newPositions[i * 3] = pos.x;
-          newPositions[i * 3 + 1] = pos.y;
-          newPositions[i * 3 + 2] = pos.z;
-        }
-        
-        isTransitioning = true;
-        transitionProgress = 0;
-        return;
-      }
-
-      if (particleSystem) {
-        scene.remove(particleSystem);
-      }
-
-      const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(particleCount * 3);
-      const colors = new Float32Array(particleCount * 3);
-
-      for (let i = 0; i < particleCount; i++) {
-        const pos = getShapePosition(shape, i);
-        positions[i * 3] = pos.x;
-        positions[i * 3 + 1] = pos.y;
-        positions[i * 3 + 2] = pos.z;
-
-        colors[i * 3] = particleColor.r;
-        colors[i * 3 + 1] = particleColor.g;
-        colors[i * 3 + 2] = particleColor.b;
-      }
-
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-      const material = new THREE.PointsMaterial({
-        size: 0.8,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.9,
-        blending: THREE.AdditiveBlending
-      });
-
-      particleSystem = new THREE.Points(geometry, material);
-      scene.add(particleSystem);
-    }
-
-    function getShapePosition(shape, index) {
-      const t = index / particleCount;
-      
-      switch(shape) {
-        case 'cake':
-          return getCakePosition(t);
-        case 'heart':
-          return getHeartPosition(t);
-        case 'gift':
-          return getGiftPosition(t);
-        case 'star':
-          return getStarPosition(t);
-        case 'balloon':
-          return getBalloonPosition(t);
-        case 'flower':
-          return getFlowerPosition(t);
-        case 'birthday':
-          return getTextPosition(t, 'SELAMAT\nULANG TAHUN\nSAYANGKU');
-        case 'iloveyou':
-          return getTextPosition(t, 'I LOVE YOU\nLALA');
-        case 'photo':
-          return getPhotoFramePosition(t);
-        default:
-          return getCakePosition(t);
-      }
-    }
-    
-    function getPhotoFramePosition(t) {
-      // Bingkai foto portrait 9:16 TEBAL dan CANTIK!
-      const frameWidth = 11.25;
-      const frameHeight = 20;
-      const borderThickness = 2.5; // Tebal biar keliatan!
-      
-      // Create thick border by filling the border area with particles
-      const totalParticles = particleCount;
-      const index = Math.floor(t * totalParticles);
-      
-      // Distribute particles to fill the border thickness
-      const side = Math.floor(index / (totalParticles / 4)); // Which side (0=top, 1=right, 2=bottom, 3=left)
-      const sideProgress = (index % (totalParticles / 4)) / (totalParticles / 4);
-      
-      // Random offset within border thickness for filled look
-      const thicknessOffset = (Math.random() - 0.5) * borderThickness;
-      const depthVariation = (Math.random() - 0.5) * 0.3; // Tiny depth for texture
-      
-      if (side === 0) {
-        // Top edge - filled thick border
-        return {
-          x: (sideProgress - 0.5) * frameWidth * 2,
-          y: frameHeight + thicknessOffset,
-          z: depthVariation
+        const firebaseConfig = {
+            apiKey: "AIzaSyDg3fPytwtXxItoYVyZjUYfbLuSfr7N81s",
+            authDomain: "taretan-16de8.firebaseapp.com",
+            databaseURL: "https://taretan-16de8-default-rtdb.firebaseio.com",
+            projectId: "taretan-16de8",
+            storageBucket: "taretan-16de8.firebasestorage.app",
+            messagingSenderId: "1082724707692",
+            appId: "1:1082724707692:web:6dc69f37ee97f6ddb6d749"
         };
-      } else if (side === 1) {
-        // Right edge - filled thick border
-        return {
-          x: frameWidth + thicknessOffset,
-          y: frameHeight - sideProgress * frameHeight * 2,
-          z: depthVariation
-        };
-      } else if (side === 2) {
-        // Bottom edge - filled thick border
-        return {
-          x: frameWidth - sideProgress * frameWidth * 2,
-          y: -frameHeight + thicknessOffset,
-          z: depthVariation
-        };
-      } else {
-        // Left edge - filled thick border
-        return {
-          x: -frameWidth + thicknessOffset,
-          y: -frameHeight + sideProgress * frameHeight * 2,
-          z: depthVariation
-        };
-      }
-    }
-    
-    function showPhoto() {
-      if (!photoElement) {
-        photoElement = document.createElement('img');
-        photoElement.id = 'special-photo';
-        photoElement.style.position = 'absolute';
-        photoElement.style.top = '50%';
-        photoElement.style.left = '50%';
-        photoElement.style.transform = 'translate(-50%, -50%)';
-        photoElement.style.maxWidth = '400px';
-        photoElement.style.maxHeight = '400px';
-        photoElement.style.borderRadius = '16px';
-        photoElement.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.6)';
-        photoElement.style.border = '4px solid rgba(255, 255, 255, 0.3)';
-        photoElement.style.zIndex = '5';
-        photoElement.style.opacity = '0';
-        photoElement.style.transition = 'opacity 1s ease-in-out';
-        photoElement.loading = 'lazy';
-        
-        photoElement.onerror = function() {
-          console.error('Image failed to load:', this.src);
-          this.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-          this.style.width = '400px';
-          this.style.height = '400px';
-          this.style.display = 'flex';
-          this.style.alignItems = 'center';
-          this.style.justifyContent = 'center';
-          this.alt = '📷 Drag & drop foto ke layar!';
-          
-          const placeholder = document.createElement('div');
-          placeholder.style.color = 'white';
-          placeholder.style.fontSize = '18px';
-          placeholder.style.textAlign = 'center';
-          placeholder.style.padding = '20px';
-          placeholder.style.fontWeight = 'bold';
-          placeholder.innerHTML = '📷<br><br>DRAG & DROP<br>FOTO KAMU<br>KE LAYAR!<br><br>✨';
-          this.appendChild(placeholder);
-        };
-        
-        if (uploadedPhotoURL) {
-          photoElement.src = uploadedPhotoURL;
-        } else {
-          photoElement.src = '';
-          photoElement.onerror();
-        }
-        
-        photoElement.alt = 'Foto Spesial';
-        document.getElementById('canvas-container').appendChild(photoElement);
-        
-        setTimeout(() => {
-          photoElement.style.opacity = '1';
-        }, 100);
-      }
-    }
-    
-    function hidePhoto() {
-      if (photoElement) {
-        photoElement.style.opacity = '0';
-        setTimeout(() => {
-          if (photoElement && photoElement.parentNode) {
-            photoElement.parentNode.removeChild(photoElement);
-            photoElement = null;
-          }
-        }, 1000);
-      }
-    }
 
-    function getCakePosition(t) {
-      // Kue 3 tingkat dengan lilin di atas
-      if (t < 0.5) {
-        // Base cake (tingkat bawah - paling besar)
-        const angle = (t / 0.5) * Math.PI * 2;
-        const radius = 15 + Math.random() * 3;
-        const height = -10 + Math.random() * 8;
-        return {
-          x: Math.cos(angle) * radius,
-          y: height,
-          z: Math.sin(angle) * radius
-        };
-      } else if (t < 0.75) {
-        // Middle cake (tingkat tengah)
-        const angle = ((t - 0.5) / 0.25) * Math.PI * 2;
-        const radius = 10 + Math.random() * 2;
-        const height = -2 + Math.random() * 6;
-        return {
-          x: Math.cos(angle) * radius,
-          y: height,
-          z: Math.sin(angle) * radius
-        };
-      } else if (t < 0.9) {
-        // Top cake (tingkat atas - paling kecil)
-        const angle = ((t - 0.75) / 0.15) * Math.PI * 2;
-        const radius = 6 + Math.random() * 1.5;
-        const height = 4 + Math.random() * 4;
-        return {
-          x: Math.cos(angle) * radius,
-          y: height,
-          z: Math.sin(angle) * radius
-        };
-      } else {
-        // Candles (lilin-lilin di atas)
-        const candleIndex = Math.floor((t - 0.9) / 0.1 * 5);
-        const candleAngle = (candleIndex / 5) * Math.PI * 2;
-        const candleRadius = 4;
-        return {
-          x: Math.cos(candleAngle) * candleRadius,
-          y: 8 + Math.random() * 5,
-          z: Math.sin(candleAngle) * candleRadius
-        };
-      }
-    }
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        window.dbRef = ref(db, 'taretan_final_v46'); // Update ke V46 biar fresh
+        window.setFirebase = set;
+        window.onValueFirebase = onValue;
 
-    function getHeartPosition(t) {
-      // Hati 3D yang lebih romantis
-      const angle = t * Math.PI * 2;
-      const x = 16 * Math.pow(Math.sin(angle), 3);
-      const y = 13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle);
-      const z = Math.sin(angle) * 8 * Math.sin(t * Math.PI * 4);
-      
-      return { x, y, z };
-    }
-
-    function getGiftPosition(t) {
-      // Kotak kado dengan pita
-      if (t < 0.8) {
-        // Box
-        const size = 15;
-        const face = Math.floor((t / 0.8) * 6);
-        const u = Math.random();
-        const v = Math.random();
-        
-        switch(face) {
-          case 0: return { x: size, y: (u - 0.5) * size * 2, z: (v - 0.5) * size * 2 };
-          case 1: return { x: -size, y: (u - 0.5) * size * 2, z: (v - 0.5) * size * 2 };
-          case 2: return { x: (u - 0.5) * size * 2, y: size, z: (v - 0.5) * size * 2 };
-          case 3: return { x: (u - 0.5) * size * 2, y: -size, z: (v - 0.5) * size * 2 };
-          case 4: return { x: (u - 0.5) * size * 2, y: (v - 0.5) * size * 2, z: size };
-          default: return { x: (u - 0.5) * size * 2, y: (v - 0.5) * size * 2, z: -size };
-        }
-      } else {
-        // Ribbon (pita)
-        const ribbonT = (t - 0.8) / 0.2;
-        const angle = ribbonT * Math.PI * 4;
-        return {
-          x: Math.cos(angle) * 3,
-          y: -15 + ribbonT * 30,
-          z: Math.sin(angle) * 3
-        };
-      }
-    }
-
-    function getStarPosition(t) {
-      // Bintang 5 sudut berkilau
-      const points = 5;
-      const outerRadius = 20;
-      const innerRadius = 8;
-      const layer = Math.floor(t * 10);
-      const layerT = (t * 10) % 1;
-      const angle = layerT * Math.PI * 2;
-      const pointIndex = Math.floor(layerT * points * 2);
-      const isOuter = pointIndex % 2 === 0;
-      const radius = isOuter ? outerRadius : innerRadius;
-      
-      return {
-        x: Math.cos(angle * points) * radius,
-        y: Math.sin(angle * points) * radius,
-        z: (layer - 5) * 2 + (Math.random() - 0.5) * 3
-      };
-    }
-
-    function getBalloonPosition(t) {
-      // Balon-balon terbang dengan tali
-      const balloonCount = 8;
-      const balloonIndex = Math.floor(t * balloonCount);
-      const balloonT = (t * balloonCount) % 1;
-      const angle = (balloonIndex / balloonCount) * Math.PI * 2;
-      const radius = 12;
-      
-      if (balloonT < 0.8) {
-        // Balloon body (oval)
-        const phi = balloonT / 0.8 * Math.PI;
-        const balloonRadius = 5;
-        return {
-          x: Math.cos(angle) * radius + Math.cos(phi * 4) * balloonRadius,
-          y: 5 + Math.sin(phi) * balloonRadius * 1.3,
-          z: Math.sin(angle) * radius + Math.sin(phi * 4) * balloonRadius
-        };
-      } else {
-        // String (tali balon)
-        const stringT = (balloonT - 0.8) / 0.2;
-        return {
-          x: Math.cos(angle) * radius,
-          y: 5 - stringT * 15 + Math.sin(stringT * Math.PI * 3) * 2,
-          z: Math.sin(angle) * radius
-        };
-      }
-    }
-
-    function getFlowerPosition(t) {
-      // Bunga dengan kelopak romantis
-      const angle = t * Math.PI * 2;
-      const petals = 8;
-      const petalAngle = Math.sin(petals * angle) * 12;
-      const radius = 8 + petalAngle;
-      const height = Math.cos(angle * petals) * 4 + Math.sin(t * Math.PI * 4) * 3;
-      
-      return {
-        x: Math.cos(angle) * radius,
-        y: height,
-        z: Math.sin(angle) * radius
-      };
-    }
-
-    function getTextPosition(t, text) {
-      const lines = text.split('\n');
-      const fontSize = 8;
-      const letterSpacing = 6;
-      const lineHeight = 12;
-      
-      const totalHeight = lines.length * lineHeight;
-      const startY = totalHeight / 2;
-      
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ';
-      const letterPatterns = {
-        'A': [[0,1,1,1,0],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]],
-        'B': [[1,1,1,1,0],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,1],[1,1,1,1,0]],
-        'C': [[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,1]],
-        'D': [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0]],
-        'E': [[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,1,1,1,1]],
-        'G': [[0,1,1,1,1],[1,0,0,0,0],[1,0,1,1,1],[1,0,0,0,1],[0,1,1,1,0]],
-        'H': [[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]],
-        'I': [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1]],
-        'K': [[1,0,0,1,0],[1,0,1,0,0],[1,1,0,0,0],[1,0,1,0,0],[1,0,0,1,0]],
-        'L': [[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
-        'M': [[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1]],
-        'N': [[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,0,1,1],[1,0,0,0,1]],
-        'O': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
-        'R': [[1,1,1,1,0],[1,0,0,0,1],[1,1,1,1,0],[1,0,1,0,0],[1,0,0,1,0]],
-        'S': [[0,1,1,1,1],[1,0,0,0,0],[0,1,1,1,0],[0,0,0,0,1],[1,1,1,1,0]],
-        'T': [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
-        'U': [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
-        'V': [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0]],
-        'Y': [[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
-        ' ': [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]
-      };
-      
-      let allPoints = [];
-      let currentY = startY; // Start from top
-      
-      lines.forEach((line, lineIndex) => {
-        const lineWidth = line.length * letterSpacing;
-        let currentX = -lineWidth / 2;
-        
-        for (let charIndex = 0; charIndex < line.length; charIndex++) {
-          const char = line[charIndex];
-          const pattern = letterPatterns[char.toUpperCase()];
-          if (pattern) {
-            for (let row = 0; row < 5; row++) {
-              for (let col = 0; col < 5; col++) {
-                if (pattern[row][col] === 1) {
-                  // Store with ordering information to maintain sequence
-                  allPoints.push({
-                    x: currentX + col * 1.2,
-                    y: currentY - row * 1.2,
-                    z: (Math.random() - 0.5) * 2,
-                    order: lineIndex * 1000 + charIndex * 100 + row * 10 + col
-                  });
-                }
-              }
+        onValue(window.dbRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                window.appData = data;
+                updateDashboard(data);
             }
-          }
-          currentX += letterSpacing;
-        }
-        currentY -= lineHeight; // Move down for next line
-      });
-      
-      // Sort by order to ensure sequential rendering
-      allPoints.sort((a, b) => a.order - b.order);
-      
-      if (allPoints.length === 0) {
-        return { x: 0, y: 0, z: 0 };
-      }
-      
-      const index = Math.floor(t * allPoints.length) % allPoints.length;
-      return allPoints[index];
-    }
-
-    let animationTime = 0;
-
-    function animate() {
-      requestAnimationFrame(animate);
-
-      animationTime += 0.01;
-      currentScale += (targetScale - currentScale) * 0.1;
-      
-      // Handle smooth transition animation
-      if (isTransitioning && particleSystem && oldPositions && newPositions) {
-        transitionProgress += 0.02; // Speed of transition
-        
-        // Easing function for smooth animation (ease-in-out)
-        const easeProgress = transitionProgress < 0.5
-          ? 4 * transitionProgress * transitionProgress * transitionProgress
-          : 1 - Math.pow(-2 * transitionProgress + 2, 3) / 2;
-        
-        const positions = particleSystem.geometry.attributes.position.array;
-        
-        // Interpolate between old and new positions
-        for (let i = 0; i < particleCount * 3; i++) {
-          positions[i] = oldPositions[i] + (newPositions[i] - oldPositions[i]) * easeProgress;
-        }
-        
-        particleSystem.geometry.attributes.position.needsUpdate = true;
-        
-        // Add extra rotation during transition for dramatic effect (except for photo)
-        if (targetShape !== 'photo') {
-          particleSystem.rotation.y += 0.008;
-        }
-        
-        // Finish transition
-        if (transitionProgress >= 1) {
-          isTransitioning = false;
-          transitionProgress = 0;
-          oldPositions = null;
-          newPositions = null;
-          currentShape = targetShape;
-        }
-      } else if (particleSystem) {
-        // Only rotate if not photo shape
-        if (currentShape !== 'photo') {
-          particleSystem.rotation.y += 0.003;
-        } else {
-          // LOCK rotation at 0 degrees for photo frame
-          particleSystem.rotation.x = 0;
-          particleSystem.rotation.y = 0;
-          particleSystem.rotation.z = 0;
-          // Gentle floating up and down for photo
-          const floatOffset = Math.sin(animationTime * 0.5) * 2;
-          particleSystem.position.y = floatOffset;
-        }
-      }
-      
-      if (particleSystem) {
-        particleSystem.scale.set(currentScale, currentScale, currentScale);
-      }
-      
-      // Apply gentle floating AND scaling to photo element (no rotation)
-      if (photoElement && currentShape === 'photo') {
-        // Use NEGATIVE floatOffset so photo moves in SAME direction as particles!
-        const floatOffset = -particleSystem.position.y * 10; // NEGATIVE to sync direction!
-        // Use currentScale so photo follows hand gestures!
-        photoElement.style.transform = `translate(-50%, calc(-50% + ${floatOffset}px)) scale(${currentScale})`;
-      }
-
-      renderer.render(scene, camera);
-    }
-
-    function updateParticleColor(color) {
-      particleColor = new THREE.Color(color);
-      if (particleSystem) {
-        const colors = particleSystem.geometry.attributes.color.array;
-        for (let i = 0; i < particleCount; i++) {
-          colors[i * 3] = particleColor.r;
-          colors[i * 3 + 1] = particleColor.g;
-          colors[i * 3 + 2] = particleColor.b;
-        }
-        particleSystem.geometry.attributes.color.needsUpdate = true;
-      }
-    }
-
-    async function initCamera() {
-      document.getElementById('status-text').textContent = 'Requesting camera access...';
-      
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        document.getElementById('status-text').textContent = 'Camera not supported - Using mouse';
-        initMouseFallback();
-        return;
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'user', 
-            width: { ideal: 640 }, 
-            height: { ideal: 480 } 
-          } 
         });
-        
-        const videoElement = document.getElementById('video');
-        videoElement.srcObject = stream;
-        
-        videoElement.onloadedmetadata = () => {
-          videoElement.play();
-          initHandTracking();
-          document.getElementById('status-text').textContent = 'Camera active - Show your hand';
-        };
-      } catch (error) {
-        console.error('Camera access error:', error);
-        
-        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-          document.getElementById('status-text').textContent = 'Camera blocked - Check permissions';
-        } else if (error.name === 'NotFoundError') {
-          document.getElementById('status-text').textContent = 'No camera found - Using mouse';
-        } else {
-          document.getElementById('status-text').textContent = 'Camera error - Using mouse';
+    </script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
         }
-        
-        initMouseFallback();
-      }
-    }
+    </script>
 
-    function initHandTracking() {
-      const hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-      });
-
-      hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-      });
-
-      hands.onResults(onHandResults);
-
-      const camera = new Camera(document.getElementById('video'), {
-        onFrame: async () => {
-          await hands.send({ image: document.getElementById('video') });
-        },
-        width: 640,
-        height: 480
-      });
-      camera.start();
-    }
-
-    function onHandResults(results) {
-      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const landmarks = results.multiHandLandmarks[0];
-        const isOpen = calculateHandOpenness(landmarks);
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        handOpen = isOpen;
-        targetScale = isOpen ? 1.5 : 0.7;
-        
-        const statusElement = document.getElementById('status');
-        const statusText = document.getElementById('status-text');
-        
-        // Detect hand swipe gesture - works anytime!
-        const wrist = landmarks[0];
-        const currentHandX = wrist.x;
-        
-        if (previousHandX !== null) {
-          const deltaX = currentHandX - previousHandX;
-          const threshold = 0.08;
-          
-          if (!gestureTimeout) {
-            if (deltaX > threshold) {
-              // Swipe right - next shape
-              changeShape(1);
-              statusText.textContent = '➡️ Geser kanan - Bentuk berikutnya!';
-              statusElement.classList.add('hand-open');
-              
-              gestureTimeout = setTimeout(() => {
-                gestureTimeout = null;
-                statusText.textContent = 'Geser kanan/kiri untuk ganti bentuk';
-                statusElement.classList.remove('hand-open');
-              }, 800);
-            } else if (deltaX < -threshold) {
-              // Swipe left - previous shape
-              changeShape(-1);
-              statusText.textContent = '⬅️ Geser kiri - Bentuk sebelumnya!';
-              statusElement.classList.add('hand-open');
-              
-              gestureTimeout = setTimeout(() => {
-                gestureTimeout = null;
-                statusText.textContent = 'Geser kanan/kiri untuk ganti bentuk';
-                statusElement.classList.remove('hand-open');
-              }, 800);
-            }
-          }
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        previousHandX = currentHandX;
-      }
-    }
-    
-    function changeShape(direction) {
-      if (isTransitioning) return; // Don't change during transition
-      
-      const currentIndex = shapes.indexOf(currentShape);
-      let newIndex = currentIndex + direction;
-      
-      if (newIndex >= shapes.length) {
-        newIndex = 0;
-      } else if (newIndex < 0) {
-        newIndex = shapes.length - 1;
-      }
-      
-      const newShape = shapes[newIndex];
-      createParticles(newShape, true); // Enable animation
-      document.getElementById('shape-select').value = newShape;
-    }
+        .mobile-bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            border-top: 1px solid #e5e7eb;
+            display: flex; justify-content: space-around;
+            padding: 12px 0; z-index: 50;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .dark .mobile-bottom-nav {
+            background: rgba(17, 24, 39, 0.98);
+            border-top: 1px solid #374151;
+        }
 
-    function calculateHandOpenness(landmarks) {
-      const fingerTips = [8, 12, 16, 20];
-      const fingerBases = [5, 9, 13, 17];
-      
-      let openFingers = 0;
-      
-      for (let i = 0; i < fingerTips.length; i++) {
-        const tip = landmarks[fingerTips[i]];
-        const base = landmarks[fingerBases[i]];
-        const distance = Math.sqrt(
-          Math.pow(tip.x - base.x, 2) + 
-          Math.pow(tip.y - base.y, 2)
-        );
+        .period-btn { transition: all 0.2s; }
+        .period-btn.active { background-color: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
+        .period-btn.inactive { color: #6b7280; background-color: transparent; }
+        .period-btn.inactive:hover { background-color: #f3f4f6; }
+        .dark .period-btn.inactive:hover { background-color: #374151; }
+
+        img[src="logo.png"], img[src="logout.png"] { text-indent: -10000px; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-700 bg-gray-50 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-300">
+
+    <div id="loginOverlay" class="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/95 backdrop-blur-sm p-4">
+        <div class="glass bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center fade-in">
+            <div class="w-24 h-24 mx-auto mb-6 bg-white rounded-full p-3 shadow-lg flex items-center justify-center overflow-hidden">
+                <img src="logo.png" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" class="w-full h-full object-contain" alt="Logo">
+                <div class="hidden w-full h-full bg-gradient-to-tr from-blue-600 to-purple-600 rounded-full items-center justify-center text-3xl text-white"><i class="fas fa-camera"></i></div>
+            </div>
+            <h2 class="text-3xl font-black mb-1 dark:text-white tracking-tight">TARETAN</h2>
+            <p class="text-blue-500 font-bold tracking-widest text-xs mb-8">PRODUCTION</p>
+            <div class="space-y-4">
+                <button onclick="attemptLogin('CEO')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg active:scale-95 flex items-center justify-center gap-3 transition-transform">
+                    <i class="fas fa-user-tie"></i> Login CEO
+                </button>
+                <button onclick="attemptLogin('INVESTOR')" class="w-full bg-white border-2 border-gray-200 text-gray-700 font-bold py-3.5 px-4 rounded-xl hover:bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600 flex items-center justify-center gap-3 transition-transform active:scale-95">
+                    <i class="fas fa-chart-line"></i> Masuk Investor
+                </button>
+            </div>
+            <p class="mt-8 text-[10px] text-gray-400">V46.0 - Logic Fix & Grid Chart</p>
+        </div>
+    </div>
+
+    <aside class="w-72 bg-white dark:bg-gray-800 hidden md:flex flex-col border-r border-gray-200 dark:border-gray-700 z-10">
+        <div class="p-8 flex items-center gap-4">
+            <div class="w-12 h-12 shrink-0 bg-white rounded-full shadow-md flex items-center justify-center p-2 overflow-hidden border border-gray-100">
+                <img src="logo.png" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" class="w-full h-full object-contain" alt="Logo">
+                <div class="hidden w-full h-full rounded-full bg-blue-600 items-center justify-center text-white"><i class="fas fa-camera"></i></div>
+            </div>
+            <div>
+                <h1 class="font-black text-xl tracking-tight leading-none">TARETAN</h1>
+                <p class="text-xs text-blue-600 font-bold tracking-widest">PRODUCTION</p>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition hover:bg-blue-50 dark:hover:bg-gray-700 font-medium">
+                <i class="fas fa-th-large w-5 text-center"></i> <span>Dashboard</span>
+            </button>
+            <button onclick="switchView('laporan')" id="nav-laporan" class="nav-item w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition hover:bg-blue-50 dark:hover:bg-gray-700 font-medium">
+                <i class="fas fa-folder-open w-5 text-center"></i> <span>Laporan Detail</span>
+            </button>
+            <button onclick="switchView('settings')" id="nav-settings" class="nav-item w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition hover:bg-blue-50 dark:hover:bg-gray-700 font-medium">
+                <i class="fas fa-sliders-h w-5 text-center"></i> <span>Pengaturan</span>
+            </button>
+        </nav>
+        <div class="p-6 border-t dark:border-gray-700">
+            <div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold shadow">U</div>
+                <div class="flex-1 overflow-hidden">
+                    <p class="text-sm font-bold user-role-display truncate">Guest</p>
+                    <button onclick="logout()" class="text-xs text-red-500 hover:text-red-600 font-semibold flex items-center gap-1">
+                        <img src="logout.png" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline'" class="w-4 h-4 object-contain" alt="X"> 
+                        <span>Keluar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto relative pb-24 md:pb-0 bg-gray-50 dark:bg-gray-900">
         
-        if (distance > 0.1) openFingers++;
-      }
-      
-      return openFingers >= 3;
-    }
+        <header class="flex flex-col px-6 py-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md sticky top-0 z-20 gap-4 shadow-sm">
+            <div class="md:hidden flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center p-1.5 overflow-hidden border border-gray-100">
+                        <img src="logo.png" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" class="w-full h-full object-contain" alt="Logo">
+                        <div class="hidden w-full h-full rounded-full bg-blue-600 items-center justify-center text-white"><i class="fas fa-camera"></i></div>
+                    </div>
+                    <span class="font-black text-lg text-gray-800 dark:text-white">TARETAN</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleDarkMode()" class="w-8 h-8 flex items-center justify-center text-gray-600 dark:text-yellow-400">
+                        <i class="fas fa-moon dark:hidden"></i><i class="fas fa-sun hidden dark:block"></i>
+                    </button>
+                    <div onclick="logout()" class="w-8 h-8 cursor-pointer active:scale-90 transition">
+                         <div class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><i class="fas fa-power-off"></i></div>
+                    </div>
+                </div>
+            </div>
 
-    function initMouseFallback() {
-      let isMouseDown = false;
-      
-      document.addEventListener('mousedown', () => {
-        isMouseDown = true;
-        targetScale = 1.5;
-        document.getElementById('status-text').textContent = 'Mouse Down - Particles expanding';
-      });
-      
-      document.addEventListener('mouseup', () => {
-        isMouseDown = false;
-        targetScale = 0.7;
-        document.getElementById('status-text').textContent = 'Mouse Up - Particles contracting';
-      });
-    }
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 id="page-title" class="text-2xl font-black text-gray-800 dark:text-white">Dashboard Overview</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Selamat datang, <span class="user-role-display font-bold text-blue-600">Guest</span></p>
+                </div>
 
-    document.getElementById('shape-select').addEventListener('change', (e) => {
-      if (isTransitioning) return;
-      const newShape = e.target.value;
-      createParticles(newShape, true);
-    });
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <button onclick="toggleDarkMode()" class="hidden md:flex w-10 h-10 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 items-center justify-center text-gray-600 dark:text-yellow-400 shadow-sm hover:shadow-md transition">
+                        <i class="fas fa-moon dark:hidden"></i><i class="fas fa-sun hidden dark:block"></i>
+                    </button>
 
-    document.getElementById('color-picker').addEventListener('input', (e) => {
-      const color = e.target.value;
-      updateParticleColor(color);
-      document.getElementById('color-swatch').style.background = color;
-      if (window.elementSdk) {
-        window.elementSdk.setConfig({ primary_color: color });
-      }
-    });
+                    <div id="uploadSection" class="ceo-only hidden w-full md:w-auto">
+                        <input type="file" id="excelInput" class="hidden"> 
+                        <label for="excelInput" class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition flex items-center justify-center gap-2 active:scale-95">
+                            <i class="fas fa-cloud-upload-alt"></i> <span>Upload ke Database</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-    document.getElementById('fullscreen-btn').addEventListener('click', () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
-    });
+        <div class="p-4 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+            
+            <section id="view-dashboard" class="view-section space-y-6 fade-in">
+                <div id="dataStatus" class="hidden bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 px-5 py-3 rounded-xl text-sm border border-blue-100 dark:border-blue-800 flex items-center gap-3">
+                    <i class="fas fa-wifi text-lg"></i> 
+                    <span id="statusText" class="font-medium">Menghubungkan ke Cloud...</span>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div class="glass p-5 rounded-3xl border-l-[6px] border-blue-500 relative overflow-hidden group hover:shadow-lg transition">
+                        <div class="absolute -right-6 -top-6 text-blue-500/10 text-8xl group-hover:scale-110 transition duration-500"><i class="fas fa-wallet"></i></div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Penghasilan</p>
+                        <p class="text-lg md:text-2xl font-black text-gray-800 dark:text-white price-value truncate" id="dashPrice">Rp 0</p>
+                    </div>
+                    <div class="glass p-5 rounded-3xl border-l-[6px] border-purple-500 relative overflow-hidden group hover:shadow-lg transition">
+                         <div class="absolute -right-6 -top-6 text-purple-500/10 text-8xl group-hover:scale-110 transition duration-500"><i class="fas fa-layer-group"></i></div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Total Saham</p>
+                        <p class="text-lg md:text-2xl font-black text-gray-800 dark:text-white truncate" id="dashVolume">0</p>
+                    </div>
+                    <div class="glass p-5 rounded-3xl border-l-[6px] border-green-500 relative overflow-hidden group hover:shadow-lg transition">
+                        <div class="absolute -right-6 -top-6 text-green-500/10 text-8xl group-hover:scale-110 transition duration-500"><i class="fas fa-users"></i></div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Total Investor</p>
+                        <p class="text-lg md:text-2xl font-black text-green-600 price-value truncate" id="dashInvestor">0 Org</p>
+                    </div>
+                    <div class="glass p-5 rounded-3xl border-l-[6px] border-red-500 relative overflow-hidden group hover:shadow-lg transition">
+                        <div class="absolute -right-6 -top-6 text-red-500/10 text-8xl group-hover:scale-110 transition duration-500"><i class="fas fa-chart-line"></i></div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Kenaikan (<span id="growthLabel">1B</span>)</p>
+                        <p class="text-lg md:text-2xl font-black text-red-500 price-value" id="dashGrowth">0%</p>
+                    </div>
+                </div>
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+                <div class="glass p-5 md:p-8 rounded-3xl bg-white dark:bg-gray-800 shadow-sm">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                        <h3 class="font-bold text-lg dark:text-white">Statistik Keuangan</h3>
+                        <div class="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                            <button onclick="setPeriod('1B')" class="period-btn active px-3 py-1 rounded-md text-xs font-bold">1B</button>
+                            <button onclick="setPeriod('3B')" class="period-btn inactive px-3 py-1 rounded-md text-xs font-bold">3B</button>
+                            <button onclick="setPeriod('6B')" class="period-btn inactive px-3 py-1 rounded-md text-xs font-bold">6B</button>
+                            <button onclick="setPeriod('1T')" class="period-btn inactive px-3 py-1 rounded-md text-xs font-bold">1T</button>
+                        </div>
+                    </div>
+                    <div class="h-64 w-full relative">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="glass p-5 md:p-6 rounded-3xl bg-white dark:bg-gray-800">
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="font-bold text-lg dark:text-white">Rincian Investor</h3>
+                        <input type="text" id="searchMobile" onkeyup="filterMobileList()" placeholder="Cari Nama..." class="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg text-xs outline-none">
+                    </div>
+                    <div id="mobileDataList" class="space-y-4">
+                        <div class="text-center text-gray-400 text-sm py-8">Memuat Data...</div>
+                    </div>
+                </div>
+            </section>
 
-    async function onConfigChange(config) {
-      document.getElementById('main-title').textContent = config.main_title || defaultConfig.main_title;
-      document.getElementById('instruction-text').textContent = config.instruction_text || defaultConfig.instruction_text;
-      
-      const fontFamily = config.font_family || defaultConfig.font_family;
-      const fontSize = config.font_size || defaultConfig.font_size;
-      const baseFontStack = 'Helvetica Neue, sans-serif';
-      
-      document.body.style.fontFamily = `${fontFamily}, ${baseFontStack}`;
-      document.getElementById('main-title').style.fontSize = `${fontSize * 1.71}px`;
-      document.querySelector('.instruction').style.fontSize = `${fontSize * 0.93}px`;
-      document.querySelectorAll('label').forEach(label => {
-        label.style.fontSize = `${fontSize * 0.86}px`;
-      });
-      document.querySelectorAll('select, input').forEach(input => {
-        input.style.fontSize = `${fontSize}px`;
-      });
-      document.getElementById('fullscreen-btn').style.fontSize = `${fontSize}px`;
-      document.getElementById('status').style.fontSize = `${fontSize * 0.93}px`;
-      
-      if (config.primary_color) {
-        updateParticleColor(config.primary_color);
-        document.getElementById('color-picker').value = config.primary_color;
-        document.getElementById('color-swatch').style.background = config.primary_color;
-      }
-      
-      if (config.background_start && config.background_end) {
-        document.getElementById('app-container').style.background = 
-          `radial-gradient(ellipse at center, ${config.background_start} 0%, ${config.background_end} 100%)`;
-      }
-      
-      if (config.accent_color) {
-        document.getElementById('main-title').style.color = config.accent_color;
-      }
-    }
+            <section id="view-settings" class="view-section hidden space-y-6 fade-in">
+                <div class="glass p-6 md:p-8 rounded-3xl bg-white dark:bg-gray-800">
+                    <h3 class="font-bold text-2xl mb-6 dark:text-white flex items-center gap-3"><i class="fas fa-cog text-gray-400"></i> Pengaturan</h3>
+                    <div class="ceo-only hidden space-y-5">
+                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 p-5 rounded-2xl">
+                             <button onclick="clearCloudData()" class="w-full bg-red-600 text-white p-4 rounded-xl text-sm font-bold shadow hover:bg-red-700 transition flex items-center justify-center gap-2"><i class="fas fa-trash-alt"></i> Hapus Database (Reset)</button>
+                        </div>
+                    </div>
+                    <div class="investor-only hidden text-center py-10"><p class="text-gray-400">Anda dalam mode Investor (View Only).</p></div>
+                </div>
+            </section>
+            
+            <section id="view-laporan" class="view-section hidden space-y-6 fade-in">
+                 <div class="glass p-6 md:p-8 rounded-3xl bg-white dark:bg-gray-800">
+                    <h3 class="font-bold text-2xl mb-2 dark:text-white">Laporan Keuangan</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        <button onclick="downloadExcel()" class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-1"><i class="fas fa-file-excel text-xl"></i> Download Excel</button>
+                        <button onclick="downloadPDF()" class="bg-red-600 hover:bg-red-700 text-white p-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-1"><i class="fas fa-file-pdf text-xl"></i> Download PDF</button>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-200">
+                                <tr>
+                                    <th class="px-6 py-3">Nama Investor</th>
+                                    <th class="px-6 py-3">Persen</th>
+                                    <th class="px-6 py-3">Jumlah Saham</th>
+                                    <th class="px-6 py-3 text-right">Hasil (Rp)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
 
-    if (window.elementSdk) {
-      window.elementSdk.init({
-        defaultConfig,
-        onConfigChange,
-        mapToCapabilities: (config) => ({
-          recolorables: [
-            {
-              get: () => config.primary_color || defaultConfig.primary_color,
-              set: (value) => {
-                config.primary_color = value;
-                window.elementSdk.setConfig({ primary_color: value });
-              }
-            },
-            {
-              get: () => config.background_start || defaultConfig.background_start,
-              set: (value) => {
-                config.background_start = value;
-                window.elementSdk.setConfig({ background_start: value });
-              }
-            },
-            {
-              get: () => config.background_end || defaultConfig.background_end,
-              set: (value) => {
-                config.background_end = value;
-                window.elementSdk.setConfig({ background_end: value });
-              }
-            },
-            {
-              get: () => config.accent_color || defaultConfig.accent_color,
-              set: (value) => {
-                config.accent_color = value;
-                window.elementSdk.setConfig({ accent_color: value });
-              }
+    <nav class="mobile-bottom-nav md:hidden">
+        <button onclick="switchView('dashboard')" id="mob-nav-dashboard" class="flex flex-col items-center justify-center w-20 py-2 rounded-2xl text-gray-400 transition-all duration-300">
+            <i class="fas fa-th-large text-xl mb-1"></i><span class="text-[10px] font-bold">Home</span>
+        </button>
+        <button onclick="switchView('laporan')" id="mob-nav-laporan" class="flex flex-col items-center justify-center w-20 py-2 rounded-2xl text-gray-400 transition-all duration-300">
+            <i class="fas fa-file-alt text-xl mb-1"></i><span class="text-[10px] font-bold">Laporan</span>
+        </button>
+        <button onclick="switchView('settings')" id="mob-nav-settings" class="flex flex-col items-center justify-center w-20 py-2 rounded-2xl text-gray-400 transition-all duration-300">
+            <i class="fas fa-sliders-h text-xl mb-1"></i><span class="text-[10px] font-bold">Setting</span>
+        </button>
+    </nav>
+
+    <script>
+        let rawData = {}; 
+        let chartInstance = null;
+        let currentPeriod = '1B';
+        const PASSWORD_CEO = "admin123";
+
+        const formatRupiah = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
+        const formatRibuan = (num) => new Intl.NumberFormat('id-ID').format(num); 
+
+        window.onload = function() {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
             }
-          ],
-          borderables: [],
-          fontEditable: {
-            get: () => config.font_family || defaultConfig.font_family,
-            set: (value) => {
-              config.font_family = value;
-              window.elementSdk.setConfig({ font_family: value });
-            }
-          },
-          fontSizeable: {
-            get: () => config.font_size || defaultConfig.font_size,
-            set: (value) => {
-              config.font_size = value;
-              window.elementSdk.setConfig({ font_size: value });
-            }
-          }
-        }),
-        mapToEditPanelValues: (config) => new Map([
-          ["main_title", config.main_title || defaultConfig.main_title],
-          ["instruction_text", config.instruction_text || defaultConfig.instruction_text]
-        ])
-      });
-    }
-
-    // Drag and Drop functionality
-    const appContainer = document.getElementById('app-container');
-    const dropZone = document.getElementById('drop-zone');
-    
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      appContainer.addEventListener(eventName, preventDefaults, false);
-    });
-    
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    ['dragenter', 'dragover'].forEach(eventName => {
-      appContainer.addEventListener(eventName, () => {
-        dropZone.classList.add('active');
-      }, false);
-    });
-    
-    ['dragleave', 'drop'].forEach(eventName => {
-      appContainer.addEventListener(eventName, () => {
-        dropZone.classList.remove('active');
-      }, false);
-    });
-    
-    appContainer.addEventListener('drop', handleDrop, false);
-    
-    function handleDrop(e) {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-      
-      if (files.length > 0) {
-        handleFiles(files);
-      }
-    }
-    
-    function handleFiles(files) {
-      const file = files[0];
-      
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-          uploadedPhotoURL = e.target.result;
-          
-          // If we're on photo shape, refresh the photo
-          if (currentShape === 'photo' && photoElement) {
-            hidePhoto();
-            setTimeout(() => {
-              showPhoto();
-            }, 100);
-          }
-          
-          // Auto switch to photo shape
-          if (currentShape !== 'photo') {
-            createParticles('photo', true);
-            document.getElementById('shape-select').value = 'photo';
-          }
-          
-          document.getElementById('status-text').textContent = '��� Foto berhasil di-upload!';
-          setTimeout(() => {
-            document.getElementById('status-text').textContent = 'Geser kanan/kiri untuk ganti bentuk';
-          }, 2000);
+            switchView('dashboard');
         };
-        
-        reader.readAsDataURL(file);
-      } else {
-        document.getElementById('status-text').textContent = '❌ File harus gambar (JPG/PNG/GIF)';
-        setTimeout(() => {
-          document.getElementById('status-text').textContent = 'Geser kanan/kiri untuk ganti bentuk';
-        }, 2000);
-      }
-    }
 
-    initThreeJS();
-    initCamera();
-    document.getElementById('color-swatch').style.background = defaultConfig.primary_color;
-  </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c465fc244ddec19',t:'MTc2OTQ5NzIzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+        function updateDashboard(data) {
+            document.getElementById('dataStatus').classList.remove('hidden');
+            const summary = data.summary || {};
+            const investors = data.investors ? Object.values(data.investors) : [];
+            const history = data.monthlyHistory || {};
 
+            document.getElementById('statusText').innerText = `Data Live: ${summary.lastUpdate || '-'}`;
+            
+            // Hitung Ulang Total dari data investor yang valid
+            const totalIncome = investors.reduce((sum, inv) => sum + (inv.profit || 0), 0);
+            const totalShares = investors.reduce((sum, inv) => sum + (inv.shares || 0), 0);
+
+            document.getElementById('dashPrice').innerText = formatRupiah(totalIncome);
+            document.getElementById('dashVolume').innerText = formatRibuan(totalShares);
+            document.getElementById('dashInvestor').innerText = investors.length + " Org";
+
+            try { renderChartAndGrowth(history, currentPeriod); } catch(e) { console.log(e); }
+            renderLists(investors, totalIncome);
+        }
+
+        // --- CHART DENGAN GRID BOX (KOTAK-KOTAK) ---
+        function renderChartAndGrowth(history, period) {
+            const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            let labels = [];
+            let values = [];
+
+            months.forEach(m => {
+                if(history[m] && history[m].income > 0) {
+                    labels.push(m.substr(0,3));
+                    values.push(history[m].income);
+                }
+            });
+
+            let limit = 1;
+            if(period === '3B') limit = 3;
+            else if(period === '6B') limit = 6;
+            else if(period === '1T') limit = 12;
+
+            const sliceLabels = labels.slice(-limit);
+            const sliceValues = values.slice(-limit);
+
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+
+            // Setup Grid Style
+            const gridColor = document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sliceLabels,
+                    datasets: [{
+                        label: 'Penghasilan',
+                        data: sliceValues,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.15)', // Agak transparan
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#2563eb',
+                        pointRadius: 4,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            display: true, // Tampilkan angka di sumbu Y
+                            grid: {
+                                display: true,
+                                color: gridColor,
+                                borderDash: [5, 5] // Efek garis putus-putus
+                            },
+                            ticks: {
+                                callback: function(value) { return value / 1000 + 'k'; }, // Singkat angka
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: true,
+                                color: gridColor,
+                                borderDash: [5, 5]
+                            },
+                            ticks: { color: '#94a3b8', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+
+            let growth = 0;
+            if(sliceValues.length > 1) {
+                const startVal = sliceValues[0];
+                const endVal = sliceValues[sliceValues.length-1];
+                if(startVal > 0) growth = ((endVal - startVal) / startVal) * 100;
+            }
+
+            document.getElementById('growthLabel').innerText = period;
+            const elGrowth = document.getElementById('dashGrowth');
+            elGrowth.innerText = growth.toFixed(1) + "%";
+            elGrowth.className = `text-lg md:text-2xl font-black price-value ${growth >= 0 ? 'text-green-500' : 'text-red-500'}`;
+        }
+
+        function setPeriod(p) {
+            currentPeriod = p;
+            document.querySelectorAll('.period-btn').forEach(b => {
+                b.classList.remove('active'); b.classList.add('inactive');
+                if(b.innerText === p) { b.classList.add('active'); b.classList.remove('inactive'); }
+            });
+            if(window.appData) updateDashboard(window.appData);
+        }
+
+        function renderLists(investors, totalIncome) {
+            investors.sort((a,b) => b.profit - a.profit);
+            const list = document.getElementById('mobileDataList'); list.innerHTML = '';
+            const tbody = document.getElementById('reportTableBody'); tbody.innerHTML = '';
+
+            investors.forEach(inv => {
+                // Hitung persen real-time
+                const pct = totalIncome > 0 ? ((inv.profit / totalIncome) * 100).toFixed(1) + "%" : "0%";
+                
+                // Mobile
+                list.innerHTML += `
+                <div class="search-item flex justify-between items-center bg-gray-50 dark:bg-gray-700/30 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 text-xs font-bold"><i class="fas fa-user"></i></div>
+                        <div>
+                            <div class="flex items-center gap-2"><p class="font-bold text-sm text-gray-800 dark:text-gray-200 capitalize name-text">${inv.name.toLowerCase()}</p><span class="text-[10px] bg-blue-100 text-blue-700 px-1 rounded font-bold">${pct}</span></div>
+                            <p class="text-[10px] text-gray-500">Saham: ${formatRibuan(inv.shares)}</p>
+                        </div>
+                    </div>
+                    <div class="text-right"><p class="font-bold text-green-600 text-sm">${formatRupiah(inv.profit)}</p></div>
+                </div>`;
+                
+                // Table
+                tbody.innerHTML += `
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap capitalize">${inv.name.toLowerCase()}</td>
+                    <td class="px-6 py-4 text-blue-600 font-bold">${pct}</td>
+                    <td class="px-6 py-4">${formatRibuan(inv.shares)}</td>
+                    <td class="px-6 py-4 text-right font-bold text-green-600">${formatRupiah(inv.profit)}</td>
+                </tr>`;
+            });
+        }
+
+        function filterMobileList() {
+            const term = document.getElementById('searchMobile').value.toLowerCase();
+            document.querySelectorAll('.search-item').forEach(item => {
+                const name = item.querySelector('.name-text').innerText.toLowerCase();
+                if(name.includes(term)) item.style.display = 'flex'; else item.style.display = 'none';
+            });
+        }
+
+        // --- LOGIC BACA EXCEL YANG DIPERBAIKI (V46) ---
+        document.getElementById('excelInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                    // 1. CARI BARIS HEADER "NAMA" & "SAHAM"
+                    let headerRowIdx = -1;
+                    for(let i=0; i<json.length; i++) {
+                        if (!json[i]) continue;
+                        const str = JSON.stringify(json[i]).toLowerCase();
+                        if(str.includes("nama") && str.includes("saham")) { headerRowIdx = i; break; }
+                    }
+                    if(headerRowIdx === -1) return alert("Format Excel Salah! Pastikan ada kolom 'Nama' dan 'Saham'.");
+
+                    const headers = Array.from(json[headerRowIdx] || []).map(h => String(h || "").toLowerCase());
+                    const iName = headers.findIndex(h => h.includes("nama"));
+                    const iShare = headers.findIndex(h => h.includes("saham"));
+                    
+                    // 2. CARI KOLOM PROFIT/JUMLAH (FIXED LOGIC)
+                    // Logika: Cari kata "jumlah" atau "total" secara spesifik di baris header.
+                    // Jika tidak ketemu, cari di baris header atasnya (jika ada merge cell).
+                    // Jika masih tidak ketemu, ambil kolom PALING KANAN yang ada isinya.
+                    
+                    let iProfit = headers.findIndex(h => h === "jumlah" || h === "total" || h.includes("hasil"));
+                    
+                    // Cek baris atasnya (kadang merge header)
+                    if (iProfit === -1 && headerRowIdx > 0) {
+                        const topHeaders = Array.from(json[headerRowIdx-1] || []).map(h => String(h || "").toLowerCase());
+                        iProfit = topHeaders.findIndex(h => h === "jumlah" || h === "total");
+                    }
+
+                    // Fallback Terakhir: Ambil kolom paling ujung yang ada isinya di baris data pertama
+                    if (iProfit === -1) {
+                         const firstDataRow = json[headerRowIdx + 1];
+                         if (firstDataRow) iProfit = firstDataRow.length - 1;
+                    }
+
+                    // 3. MULAI BACA DATA INVESTOR
+                    let tempList = [];
+                    for(let i = headerRowIdx + 1; i < json.length; i++) {
+                        const row = json[i];
+                        if(!row) continue;
+
+                        const nameVal = row[iName];
+                        if(!nameVal) continue;
+                        const nameStr = String(nameVal);
+                        
+                        // Skip baris "Total" atau baris kosong
+                        if(nameStr.toLowerCase().includes("total") || nameStr.trim() === "") continue;
+
+                        // Bersihkan angka
+                        const clean = (v) => {
+                            if (!v) return 0;
+                            // Hapus 'Rp', titik, spasi, dll, sisakan angka
+                            let str = String(v).replace(/[^0-9,-]/g, ""); 
+                            // Ganti koma jadi titik untuk desimal jika perlu (format indo biasanya titik ribuan)
+                            return parseFloat(str.replace(/,/g, ".")) || parseFloat(str) || 0;
+                        };
+
+                        const shares = clean(row[iShare]);
+                        
+                        // AMBIL PROFIT DARI INDEX YANG SUDAH DITENTUKAN
+                        // Kadang array row tidak sepanjang header, jadi ambil index terakhir row kalau iProfit kejauhan
+                        let profitVal = row[iProfit];
+                        if (profitVal === undefined && iProfit > row.length - 1) {
+                             profitVal = row[row.length - 1]; // Ambil paling kanan
+                        }
+                        const profit = clean(profitVal);
+
+                        if(shares > 0 || profit > 0) {
+                            tempList.push({ name: nameStr, shares, profit });
+                        }
+                    }
+
+                    // 4. PARSE HISTORY BULANAN
+                    let history = {};
+                    const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                    
+                    // Cari baris yang mengandung nama bulan
+                    let monthRowIndex = -1;
+                    for(let i=0; i < headerRowIdx; i++) {
+                        if(json[i] && JSON.stringify(json[i]).includes("Januari")) { monthRowIndex = i; break; }
+                    }
+
+                    if(monthRowIndex !== -1) {
+                        // Cari baris "Penghasilan" di bawah baris Bulan
+                        let incomeRowIndex = -1;
+                        for(let k=1; k<=5; k++) {
+                            const checkRow = json[monthRowIndex + k];
+                            if(checkRow && JSON.stringify(checkRow).toLowerCase().includes("hasi")) { // Peng-hasi-lan
+                                incomeRowIndex = monthRowIndex + k; break;
+                            }
+                        }
+
+                        if(incomeRowIndex !== -1) {
+                            const monthRow = json[monthRowIndex];
+                            const incomeRow = json[incomeRowIndex];
+                            
+                            months.forEach((m) => {
+                                // Cari kolom bulan ini
+                                const colIdx = monthRow.findIndex(val => String(val).includes(m));
+                                if(colIdx !== -1) {
+                                    const val = String(incomeRow[colIdx] || "0").replace(/[^0-9]/g, "");
+                                    history[m] = { income: parseFloat(val) || 0 };
+                                }
+                            });
+                        }
+                    }
+
+                    // 5. FORMAT FINAL & SAVE
+                    let investors = {};
+                    tempList.forEach((item, index) => {
+                        investors[index] = item;
+                    });
+
+                    window.setFirebase(window.dbRef, {
+                        summary: { lastUpdate: new Date().toLocaleDateString('id-ID') },
+                        investors: investors,
+                        monthlyHistory: history
+                    }).then(() => alert("SUKSES! Data Terupdate. Profit Terbaca."));
+
+                } catch (err) { alert("Error Parsing: " + err.message); console.error(err); }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // UTILS
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => { el.classList.add('hidden'); el.classList.remove('fade-in'); });
+            const activeSection = document.getElementById(`view-${viewId}`);
+            activeSection.classList.remove('hidden'); void activeSection.offsetWidth; activeSection.classList.add('fade-in');
+            
+            document.querySelectorAll('.mobile-bottom-nav button').forEach(btn => { btn.classList.remove('text-blue-600', 'bg-blue-50'); btn.classList.add('text-gray-400'); });
+            const mobBtn = document.getElementById(`mob-nav-${viewId}`);
+            if(mobBtn) { mobBtn.classList.remove('text-gray-400'); mobBtn.classList.add('text-blue-600', 'bg-blue-50'); }
+
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('bg-blue-50', 'text-blue-600'));
+            const deskBtn = document.getElementById(`nav-${viewId}`);
+            if(deskBtn) deskBtn.classList.add('bg-blue-50', 'text-blue-600');
+        }
+        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
+        function attemptLogin(role) {
+            if (role === 'CEO') {
+                if (prompt("Password CEO:") === PASSWORD_CEO) { document.getElementById('loginOverlay').classList.add('hidden'); document.querySelectorAll('.ceo-only').forEach(el => el.classList.remove('hidden')); document.querySelector('.user-role-display').innerText = "CEO"; } else alert("Password Salah!");
+            } else { document.getElementById('loginOverlay').classList.add('hidden'); document.querySelectorAll('.investor-only').forEach(el => el.classList.remove('hidden')); document.querySelector('.user-role-display').innerText = "Investor"; }
+        }
+        function logout() { location.reload(); }
+        function clearCloudData() { if(confirm("Hapus data?")) window.setFirebase(window.dbRef, null).then(()=>alert("Terhapus.")); }
+        function downloadExcel() { 
+            const d = window.appData?.investors ? Object.values(window.appData.investors) : [];
+            const ws = XLSX.utils.json_to_sheet(d.map(r=>({ "Nama": r.name, "Saham": r.shares, "Penghasilan": r.profit })));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Laporan"); XLSX.writeFile(wb, "Laporan_Taretan.xlsx");
+        }
+        function downloadPDF() {
+            const d = window.appData?.investors ? Object.values(window.appData.investors) : [];
+            const { jsPDF } = window.jspdf; const doc = new jsPDF();
+            doc.text("Laporan Investor Taretan", 14, 20);
+            doc.autoTable({ head: [['Nama', 'Saham', 'Penghasilan']], body: d.map(r => [r.name, formatRibuan(r.shares), formatRupiah(r.profit)]) });
+            doc.save("Laporan_Taretan.pdf");
+        }
+    </script>
+</body>
 </html>
