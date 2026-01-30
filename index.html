@@ -3,7 +3,7 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Happy Brithday Lala</title>
+  <title>3D Particle Gesture Interaction</title>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -407,8 +407,8 @@
     
     let photoElement = null;
     // ⭐ GANTI NAMA FILE FOTO KAMU DI BAWAH INI! ⭐
-    // Contoh: 'Lala.jpeg' atau 'my-photo.png'
-    let uploadedPhotoURL = 'foto-lala.jpg';
+    // Contoh: 'foto-lala.jpg' atau 'my-photo.png'
+    let uploadedPhotoURL = 'Lala.jpeg';
 
     function initThreeJS() {
       scene = new THREE.Scene();
@@ -511,7 +511,7 @@
         case 'birthday':
           return getTextPosition(t, 'SELAMAT\nULANG TAHUN\nSAYANGKU');
         case 'iloveyou':
-          return getTextPosition(t, 'I LOVE YOU\nLALA');
+          return getTextPosition(t, 'I LOVE YOU\nLALA\nCINTAKU');
         case 'photo':
           return getPhotoFramePosition(t);
         default:
@@ -1403,5 +1403,3 @@
   </script>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c6265f3f3a045c8',t:'MTc2OTc5MTA5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
-
-
