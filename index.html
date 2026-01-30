@@ -19,9 +19,110 @@
       color: #ffffff;
     }
 
-    html, body, #app-container {
+    html, body, #app-container, #countdown-screen {
       width: 100%;
       height: 100%;
+    }
+
+    #countdown-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      animation: countdownBg 10s ease-in-out forwards;
+    }
+
+    @keyframes countdownBg {
+      0% { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); }
+      25% { background: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #ffd676 100%); }
+      50% { background: linear-gradient(135deg, #ffd676 0%, #667eea 50%, #764ba2 100%); }
+      75% { background: linear-gradient(135deg, #764ba2 0%, #f093fb 50%, #667eea 100%); }
+      100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); }
+    }
+
+    #countdown-content {
+      text-align: center;
+      animation: floatContent 3s ease-in-out infinite;
+    }
+
+    @keyframes floatContent {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+
+    #countdown-title {
+      font-size: 48px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0 0 40px 0;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      animation: titlePulse 1s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    #countdown-number {
+      font-size: 180px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1;
+      margin: 0;
+      text-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      animation: numberScale 1s ease-in-out;
+    }
+
+    @keyframes numberScale {
+      0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+      50% { transform: scale(1.2) rotate(10deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    #countdown-subtitle {
+      font-size: 24px;
+      color: rgba(255, 255, 255, 0.9);
+      margin: 40px 0 0 0;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .countdown-hide {
+      animation: countdownOut 1s ease-in-out forwards;
+    }
+
+    @keyframes countdownOut {
+      0% { 
+        transform: scale(1);
+        opacity: 1;
+      }
+      100% { 
+        transform: scale(3);
+        opacity: 0;
+      }
+    }
+
+    .app-reveal {
+      animation: appReveal 1.5s ease-out forwards;
+    }
+
+    @keyframes appReveal {
+      0% {
+        opacity: 0;
+        transform: scale(0.8);
+        filter: blur(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0px);
+      }
     }
 
     #app-container {
@@ -249,7 +350,16 @@
   <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
  </head>
  <body>
-  <div id="app-container">
+  <div id="countdown-screen">
+   <div id="countdown-content">
+    <h1 id="countdown-title">✨ Get Ready! ✨</h1>
+    <div id="countdown-number">
+     1
+    </div>
+    <p id="countdown-subtitle">Kejutan spesialmu sayang, dimulai dalam hitungan! 🎉💖</p>
+   </div>
+  </div>
+  <div id="app-container" style="display: none;">
    <div id="canvas-container"></div>
    <video id="video" autoplay playsinline></video>
    <div id="drop-zone">
@@ -260,7 +370,7 @@
    <div id="controls">
     <h1 id="main-title">Happy Birthday! 🎂💖</h1>
     <p class="instruction" id="instruction-text">Buka tangan lebar ����� Geser kanan untuk ganti bentuk</p>
-    <div class="control-group"><label>Particle Shape</label> <select id="shape-select"> <option value="cake">🎂 Kue Ulang Tahun</option> <option value="heart">💝 Hati Cinta</option> <option value="gift">🎁 Kado Spesial</option> <option value="star">⭐ Bintang Berkilau</option> <option value="balloon">🎈 Balon Pesta</option> <option value="flower">�� Bunga Cantik</option> <option value="birthday">Selamat Ulang Tahun Sayangku</option> <option value="iloveyou">I Love You Lala</option> <option value="photo">📷 Foto Spesial</option> </select>
+    <div class="control-group"><label>Particle Shape</label> <select id="shape-select"> <option value="cake">🎂 Kue Ulang Tahun</option> <option value="heart">💝 Hati Cinta</option> <option value="gift">🎁 Kado Spesial</option> <option value="star">⭐ Bintang Berkilau</option> <option value="balloon">🎈 Balon Pesta</option> <option value="flower">�� Bunga Cantik</option> <option value="birthday">Selamat Ulang Tahun Sayangku</option> <option value="iloveyou">I Love You Lala Sayang</option> <option value="photo">📷 Foto Spesial</option> </select>
     </div>
     <div class="control-group"><label>Particle Color</label>
      <div class="color-preview"><input type="color" id="color-picker" value="#ff69b4">
@@ -298,7 +408,7 @@
     let photoElement = null;
     // ⭐ GANTI NAMA FILE FOTO KAMU DI BAWAH INI! ⭐
     // Contoh: 'foto-lala.jpg' atau 'my-photo.png'
-    let uploadedPhotoURL = 'Lala.jpeg';
+    let uploadedPhotoURL = 'foto-lala.jpg';
 
     function initThreeJS() {
       scene = new THREE.Scene();
@@ -1191,9 +1301,105 @@
       }
     }
 
-    initThreeJS();
-    initCamera();
-    document.getElementById('color-swatch').style.background = defaultConfig.primary_color;
+    // Initialize SDK first (before countdown)
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            },
+            {
+              get: () => config.background_start || defaultConfig.background_start,
+              set: (value) => {
+                config.background_start = value;
+                window.elementSdk.setConfig({ background_start: value });
+              }
+            },
+            {
+              get: () => config.background_end || defaultConfig.background_end,
+              set: (value) => {
+                config.background_end = value;
+                window.elementSdk.setConfig({ background_end: value });
+              }
+            },
+            {
+              get: () => config.accent_color || defaultConfig.accent_color,
+              set: (value) => {
+                config.accent_color = value;
+                window.elementSdk.setConfig({ accent_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["main_title", config.main_title || defaultConfig.main_title],
+          ["instruction_text", config.instruction_text || defaultConfig.instruction_text]
+        ])
+      });
+    }
+
+    // Countdown logic
+    let countdownValue = 1;
+
+    function startCountdown() {
+      const countdownNumber = document.getElementById('countdown-number');
+      const countdownScreen = document.getElementById('countdown-screen');
+      const appContainer = document.getElementById('app-container');
+      
+      const countdownInterval = setInterval(() => {
+        countdownValue++;
+        
+        if (countdownValue <= 10) {
+          // Animate number change
+          countdownNumber.style.animation = 'none';
+          void countdownNumber.offsetWidth; // Force reflow
+          countdownNumber.textContent = countdownValue;
+          countdownNumber.style.animation = 'numberScale 1s ease-in-out';
+        } else {
+          // Countdown finished - show app with animation
+          clearInterval(countdownInterval);
+          
+          // Hide countdown screen with explosion effect
+          countdownScreen.classList.add('countdown-hide');
+          
+          setTimeout(() => {
+            countdownScreen.style.display = 'none';
+            appContainer.style.display = 'block';
+            appContainer.classList.add('app-reveal');
+            
+            // Initialize app after reveal
+            initThreeJS();
+            initCamera();
+            document.getElementById('color-swatch').style.background = defaultConfig.primary_color;
+          }, 1000);
+        }
+      }, 1000); // Change number every 1 second
+    }
+
+    // Start countdown when page loads
+    startCountdown();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c465fc244ddec19',t:'MTc2OTQ5NzIzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c6265f3f3a045c8',t:'MTc2OTc5MTA5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
